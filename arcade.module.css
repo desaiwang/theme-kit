@@ -1,0 +1,293 @@
+/* Arcade: white Swiss layout on a 4-column character grid.
+   Shared by desaiwang.com (/v2) and desaimakes.com — see README.md before editing.
+   Everything is scoped under .root so it can't leak into desaiwang.com's old design. */
+
+.root {
+  /* light theme (Wedge sky accent) */
+  --bg: #fafafa;
+  --ink: hsl(0 0% 5%);
+  --mute: #a3a3a3;
+  --rule: #e8e8e8;
+  --surface: #f0f0f0;     /* image placeholders */
+  --accent: #4f7cc0;      /* small marks: focus, current nav, row number on hover */
+  --tint: #cfe0f4;        /* soft surfaces: row hover bar */
+
+  /* character grid: --ch is set on this element by the script in layout.tsx (fallback 8px) */
+  --unit: var(--ch, 8px);
+  --fs: calc(var(--unit) / 0.6);        /* IBM Plex Mono glyphs are 0.6em wide */
+  --line: calc(var(--unit) * 2.5);
+  --gut: calc(var(--unit) * 2);         /* column gutter */
+  --margin: calc(var(--unit) * 4);      /* page margin left/right (3ch on phones); keep in sync with grid.ts */
+
+  /* display + reading face. Every sans-serif use in Arcade (hero, titles, post text, reused
+     case studies, the wordmark) reads --font-family, so this one line switches them all. On
+     desaiwang.com it also shadows the old design's Inter. Helvetica ships on Apple devices;
+     others fall back to Arial. */
+  --font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  color-scheme: light;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--fs);
+  line-height: var(--line);
+  letter-spacing: normal;               /* the global stylesheet tightens letters; mono must stay on the grid */
+  -webkit-font-smoothing: antialiased;
+}
+
+.root[data-theme="dark"] {
+  --bg: #121212;
+  --ink: #f2f2f2;
+  --mute: #7c7c7c;
+  --rule: #2a2a2a;
+  --surface: #1e1e1e;
+  --accent: #8fb3e6;
+  --tint: #1d2a3b;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  .root:not([data-theme="light"]) {
+    --bg: #121212;
+    --ink: #f2f2f2;
+    --mute: #7c7c7c;
+    --rule: #2a2a2a;
+    --surface: #1e1e1e;
+    --accent: #8fb3e6;
+    --tint: #1d2a3b;
+    color-scheme: dark;
+  }
+}
+
+/* paint the overscroll area to match */
+:global(html):has(.root) { background: #fafafa !important; }
+:global(html):has(.root[data-theme="dark"]) { background: #121212 !important; }
+@media (prefers-color-scheme: dark) {
+  :global(html):has(.root:not([data-theme="light"])) { background: #121212 !important; }
+}
+
+.root a { color: inherit; text-decoration: none; }
+.root :focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.root button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+
+/* ---------- 4-column grid ----------
+   4 equal columns, margin = gutter. Everything starts on a column line and spans 1–4.
+   ≤768px: content collapses to one column (the header keeps its grid). */
+.g4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--gut);
+  padding-left: var(--margin);
+  padding-right: var(--margin);
+}
+
+/* ---------- header: name far left, Work / Play / Notes from the col-3 line (centred on phones), theme toggle far right ---------- */
+.top { position: relative; z-index: 20; padding-top: calc(var(--unit) * 2.25); padding-bottom: calc(var(--unit) * 2.25); text-transform: uppercase; align-items: baseline; }
+.top > .name { grid-column: 1; white-space: nowrap; }
+.top nav { grid-column: 3; display: flex; justify-content: flex-start; gap: calc(var(--unit) * 4); }
+.top > .themeBtn { grid-column: 4; justify-self: end; }
+.top nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.top nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+.themeBtn { text-transform: uppercase; color: var(--mute); }
+.themeBtn:hover { color: var(--ink); }
+
+/* ---------- hero ---------- */
+.hero { padding-top: calc(var(--unit) * 11.25); min-height: calc(var(--unit) * 45); }
+.hero h1 {
+  grid-column: 1 / span 2;
+  margin: 0;
+  font-family: var(--font-family), system-ui, sans-serif;
+  font-weight: 500;
+  font-size: calc(var(--unit) * 5.6);
+  line-height: 1.06;
+  letter-spacing: -0.025em;
+}
+
+/* ---------- index: labels col 1, image from the end of the labels through col 2, rows cols 3–4 ---------- */
+.index { position: relative; padding-top: calc(var(--unit) * 15); }
+.groups { grid-column: 1 / -1; grid-row: 1; display: grid; grid-template-columns: subgrid; }
+/* the hover column spans cols 1–2 but starts just right of the longest label (mono: 1 character = 1 unit),
+   so the image never covers WORK / PLAY / NOTES */
+.imageCol {
+  grid-column: 1 / span 2; grid-row: 1; position: relative; z-index: 8; pointer-events: none; overflow: clip;
+  margin-left: calc((var(--label-chars, 5) + 2) * var(--unit));
+}
+
+.group { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; margin-bottom: calc(var(--unit) * 11.25); scroll-margin-top: calc(var(--unit) * 4); }
+.group h2 { grid-column: 1; grid-row: 1 / span 40; margin: 0; font: inherit; text-transform: uppercase; }
+
+/* number + title fill col 3; type starts exactly on the col-4 line; year at the right edge */
+.row {
+  grid-column: 3 / span 2;
+  display: grid;
+  grid-template-columns: 5ch calc(50% - 5ch - var(--gut) / 2) var(--gut) minmax(0, 1fr) auto;
+  padding: 1px 4px;
+  margin: 0 -4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+.row:hover, .row:focus-visible { background: var(--tint); }
+.row:hover .num, .row:focus-visible .num { color: var(--accent); }
+.row .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .kind { grid-column: 4; color: var(--mute); }
+.row .title[data-wide] { grid-column: 2 / 5; }   /* no type column: the title runs on to the date */
+.row .year { grid-column: 5; text-align: right; }
+.row:hover .kind { color: var(--ink); }
+
+/* hover image: fills the hover column, level with the hovered row */
+.hov {
+  position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 4 / 3;
+  border-radius: 4px; overflow: hidden; background: var(--surface);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .12s, transform .25s cubic-bezier(.2, .7, .2, 1), top .25s cubic-bezier(.2, .7, .2, 1);
+  display: grid; place-items: center;
+}
+.hov[data-on="true"] { opacity: 1; transform: none; }
+.hov img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hovFallback { font-family: var(--font-family), sans-serif; font-weight: 500; font-size: calc(var(--unit) * 2.5); letter-spacing: -.02em; color: rgba(0, 0, 0, .65); text-transform: none; padding: var(--gut); text-align: center; }
+
+/* hover text (notes): the abstract, set in Inter, beside the hovered row */
+.hovText {
+  position: absolute; left: 0; top: 0; width: 100%;
+  font-family: var(--font-family), system-ui, sans-serif;
+  font-size: calc(var(--unit) * 2.1); line-height: 1.45; letter-spacing: -.01em;
+  color: var(--ink);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .12s, transform .25s cubic-bezier(.2, .7, .2, 1), top .25s cubic-bezier(.2, .7, .2, 1);
+}
+.hovText[data-on="true"] { opacity: 1; transform: none; }
+.group h2 a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+
+/* ---------- page hero (notes, tags): title in cols 1–2, a mono line under it ---------- */
+.pageHero { padding-top: calc(var(--unit) * 11.25); }
+.pageHero h1 {
+  grid-column: 1 / span 2; margin: 0;
+  font-family: var(--font-family), system-ui, sans-serif; font-weight: 500;
+  font-size: calc(var(--unit) * 5.6); line-height: 1.06; letter-spacing: -0.025em;
+}
+.pageHero p { grid-column: 1 / span 2; margin: calc(var(--unit) * 2) 0 0; color: var(--mute); text-transform: uppercase; }
+.pageHero p a { color: var(--ink); }
+.pageHero p a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.tight { padding-top: calc(var(--unit) * 9); }
+
+/* ---------- post: meta in col 1, title cols 2–4, body cols 2–3 ---------- */
+.post { padding-top: calc(var(--unit) * 11.25); row-gap: calc(var(--unit) * 5); }
+.postMeta { grid-column: 1; grid-row: 1 / span 2; text-transform: uppercase; display: flex; flex-direction: column; gap: calc(var(--unit) * 2); align-self: start; position: sticky; top: calc(var(--unit) * 3); }
+.postMeta .mlabel { color: var(--mute); display: block; }
+.postMeta a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.postTitle {
+  grid-column: 2 / span 3; margin: 0;
+  font-family: var(--font-family), system-ui, sans-serif; font-weight: 500;
+  font-size: calc(var(--unit) * 5.6); line-height: 1.06; letter-spacing: -0.025em;
+}
+.postAbstract { grid-column: 2 / span 2; margin: 0; font-family: var(--font-family), system-ui, sans-serif; font-size: calc(var(--unit) * 2.6); line-height: 1.4; letter-spacing: -.015em; color: var(--mute); }
+
+/* reading styles for MDX, in Inter at a comfortable measure */
+.prose {
+  grid-column: 2 / span 2; min-width: 0;
+  font-family: var(--font-family), system-ui, sans-serif;
+  font-size: 17px; line-height: 1.7; letter-spacing: -.01em;
+  color: var(--ink);
+}
+.prose > * + * { margin-top: 1.1em; }
+.prose p { margin: 0 0 1.25em; }
+.prose h2 { font-size: 1.6em; font-weight: 500; line-height: 1.2; letter-spacing: -.025em; margin: 2.2em 0 .6em; }
+.prose h3 { font-size: 1.25em; font-weight: 500; line-height: 1.3; letter-spacing: -.02em; margin: 1.8em 0 .5em; }
+.prose a { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: .2em; }
+.prose a:hover { background: var(--tint); }
+.prose strong { font-weight: 600; }
+.prose em { font-style: italic; }
+.prose ul, .prose ol { padding-left: 1.4em; margin: 0 0 1.25em; }
+.prose ul { list-style: disc; } .prose ol { list-style: decimal; }
+.prose li { margin-bottom: .4em; }
+.prose li::marker { color: var(--mute); }
+.prose img, .prose video { max-width: 100%; height: auto; border-radius: 4px; }
+.prose figure { margin: 2em 0; }
+.prose figcaption { font-family: var(--font-plex-mono), monospace; font-size: 12px; line-height: 1.5; text-transform: uppercase; color: var(--mute); margin-top: .75em; text-align: left; }
+.prose p code, .prose li code { font-family: var(--font-plex-mono), monospace; font-size: .88em; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
+.prose pre { font-size: 14px; }
+.prose blockquote { border-left: 2px solid var(--accent); padding-left: 1em; color: var(--mute); }
+.prose hr { border: 0; border-top: 1px solid var(--rule); margin: 2.5em 0; }
+
+/* ---------- case studies: existing content inside the new frame ---------- */
+.caseMeta { padding-top: calc(var(--unit) * 4.5); padding-bottom: calc(var(--unit) * 3); text-transform: uppercase; }
+.caseMeta > :first-child { grid-column: 1; }
+.caseMeta > :nth-child(2) { grid-column: 3; }
+.caseMeta > :nth-child(3) { grid-column: 4; display: flex; justify-content: space-between; }
+.caseMeta a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.caseBody {
+  padding: 0 var(--margin) calc(var(--unit) * 8);
+  /* the case studies were written for the current site's Inter typography */
+  font-family: var(--font-family), system-ui, sans-serif;
+  font-size: 16px; line-height: 1.5; letter-spacing: -0.03125em;
+  color: var(--ink);
+}
+.caseBody > article { max-width: none !important; margin: 0 auto; }
+/* images stay wide; running text keeps a readable line length */
+.caseBody p, .caseBody li { max-width: 72ch; }
+.caseBody a { text-decoration-color: var(--accent); }
+
+/* ---------- wordmark footer ---------- */
+.foot { overflow: hidden; }
+.wordmark {
+  margin: 0;
+  padding: calc(var(--unit) * 17.5) 8px 0;
+  font-family: var(--font-family), system-ui, sans-serif;
+  font-weight: 500;
+  font-size: clamp(64px, 15.4vw, 300px);
+  line-height: .8;
+  letter-spacing: -.045em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.meta { padding-top: calc(var(--unit) * 2.25); padding-bottom: calc(var(--unit) * 5); text-transform: uppercase; }
+.meta > :last-child { text-align: right; }
+.meta a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+
+/* desktop: the info row sits at the bottom; the wordmark is lifted so its baseline clears
+   that row, and the g's tail hangs down beside it */
+@media (min-width: 769px) {
+  .foot { position: relative; }
+  .wordmark { line-height: 1.18; overflow: visible; margin-bottom: 40px; }
+  .meta { position: absolute; left: 0; right: 0; bottom: 0; padding-top: 0; padding-bottom: 24px; line-height: 1.4; }
+}
+
+/* ---------- responsive ---------- */
+/* narrow desktop / tablet: col 3 gets tight, so the title runs on to the year and the type hides */
+@media (max-width: 1100px) {
+  .row .kind { display: none; }
+  .row .title { grid-column: 2 / 5; }
+  .prose, .postAbstract { grid-column: 2 / span 3; }
+}
+
+/* ≤768px: one column (the header keeps its 4-col grid) */
+@media (max-width: 768px) {
+  .root { --margin: calc(var(--unit) * 3); }
+  .top nav { grid-column: 2 / span 2; justify-content: center; gap: calc(var(--unit) * 2); }
+  .hero, .index, .groups, .group { grid-template-columns: minmax(0, 1fr); }
+  .hero h1, .groups, .group, .group h2, .row { grid-column: 1 / -1; }
+  .hero { padding-top: calc(var(--unit) * 7); min-height: 0; }
+  .hero h1 { font-size: calc(var(--unit) * 4); }
+  .index { padding-top: calc(var(--unit) * 9); }
+  .imageCol { display: none; }
+  .group h2 { grid-row: auto; margin-bottom: 6px; }
+  .group { margin-bottom: calc(var(--unit) * 7); }
+  .row { grid-template-columns: 4ch minmax(0, 1fr) auto; column-gap: 1ch; }
+  .row .title { grid-column: 2; }
+  .row .year { grid-column: 3; }
+  .meta { grid-template-columns: 1fr 1fr; row-gap: 12px; }
+  .meta > :last-child { text-align: left; }
+  .pageHero, .post, .caseMeta { grid-template-columns: minmax(0, 1fr); }
+  .pageHero { padding-top: calc(var(--unit) * 7); }
+  .pageHero h1, .pageHero p, .postMeta, .postTitle, .postAbstract, .prose,
+  .caseMeta > :first-child, .caseMeta > :nth-child(2), .caseMeta > :nth-child(3) { grid-column: 1 / -1; }
+  .pageHero h1, .postTitle { font-size: calc(var(--unit) * 4); }
+  .post { padding-top: calc(var(--unit) * 7); row-gap: calc(var(--unit) * 3); }
+  .postMeta { grid-row: auto; position: static; flex-direction: row; flex-wrap: wrap; column-gap: calc(var(--unit) * 3); row-gap: 4px; }
+  .prose { font-size: 16px; }
+  .caseMeta { row-gap: 4px; }
+}
+
+/* dark: placeholder text on dark tiles */
+.root[data-theme="dark"] .hovFallback { color: rgba(0, 0, 0, .7); }
