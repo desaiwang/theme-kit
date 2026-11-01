@@ -51,9 +51,13 @@ cd ../..                   # back to the site you were in
 git commit -am "Bump arcade-kit" src/arcade-kit && git push
 
 cd ../desaimakes           # and the other one
-git submodule update --remote src/arcade-kit
+npm run kit:bump           # git submodule update --remote --merge
 git commit -am "Bump arcade-kit" src/arcade-kit && git push
 ```
+
+`.gitmodules` sets `branch = main`, and `kit:bump` passes `--merge`, so the submodule stays on
+`main` and stays editable. A plain `git submodule update` leaves it on a detached HEAD; if that
+happens, `git -C src/arcade-kit checkout main` puts it back.
 
 The pointer bump is what makes the change real for a site — a commit in the kit alone changes
 nothing until each parent repo records the new SHA. Both sites deploy on Vercel, which checks out
