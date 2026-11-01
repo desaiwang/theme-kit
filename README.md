@@ -72,3 +72,38 @@ module in that repo (e.g. `desaimakes/src/app/site.module.css`), which can freel
 
 If a block of CSS would only ever be used by one site, keep it in that site. Two consumers is
 what earns a place in here.
+
+## One-time setup: putting this repo on GitHub
+
+Until this repo is on GitHub, both sites point at it by local path
+(`url = /Users/desaiwang/Documents/GitHub/arcade-kit` in their `.gitmodules`), which works
+locally but **cannot be cloned by Vercel**. To finish the setup:
+
+```bash
+cd ~/Documents/GitHub/arcade-kit
+gh repo create desaiwang/arcade-kit --public --source=. --remote=origin --push
+
+# then in each site, point the submodule at GitHub and commit the change
+cd ~/Documents/GitHub/portfolio-nextjs
+git submodule set-url src/arcade-kit https://github.com/desaiwang/arcade-kit.git
+git submodule sync src/arcade-kit
+git commit -am "Point arcade-kit at GitHub" .gitmodules
+
+cd ~/Documents/GitHub/desaimakes
+git submodule set-url src/arcade-kit https://github.com/desaiwang/arcade-kit.git
+git submodule sync src/arcade-kit
+git commit -am "Point arcade-kit at GitHub" .gitmodules
+```
+
+Use the `https://` URL, not `git@github.com:…` — Vercel clones submodules over HTTPS.
+
+Two notes about the local-path setup, both of which go away after the flip:
+
+- Git refuses `file://` submodule fetches by default, so `git submodule update --remote` needs
+  `-c protocol.file.allow=always`. Each site's `npm run kit:bump` already passes it; the flag is
+  harmless over HTTPS, so the script keeps working afterwards.
+- This checkout has `receive.denyCurrentBranch=updateInstead` set so the sites can push into it
+  while it is the origin.
+
+After the flip, `~/Documents/GitHub/arcade-kit` is just a spare clone — the copies that matter are
+the ones inside each site.
