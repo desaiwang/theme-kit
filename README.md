@@ -1,11 +1,11 @@
-# arcade-kit
+# theme-kit
 
 The shared Arcade design layer: the white Swiss look on a 4-column character grid, used by
 
 | Site | Repo | Mounted at |
 | --- | --- | --- |
-| **desaiwang.com** (the `/v2` redesign) | `desaiwang/portfolio-nextjs` | `src/arcade-kit` |
-| **desaimakes.com** | `desaiwang/desaimakes` | `src/arcade-kit` |
+| **desaiwang.com** (the `/v2` redesign) | `desaiwang/portfolio-nextjs` | `src/theme-kit` |
+| **desaimakes.com** | `desaiwang/desaimakes` | `src/theme-kit` |
 
 Both repos include this one as a **git submodule**, so there is a single copy of the CSS and
 components. A style change made from inside either checkout is the same change for both sites.
@@ -57,26 +57,26 @@ The submodule is a real checkout, so edit the files in place from whichever site
 
 ```bash
 cd portfolio-nextjs        # or desaimakes — either works
-vim src/arcade-kit/arcade.module.css
+vim src/theme-kit/arcade.module.css
 npm run dev                # the change shows up in that site immediately
 
 # publish it
-cd src/arcade-kit
+cd src/theme-kit
 git commit -am "Arcade: tighter row hover"
 git push
 
 # then point each site at the new commit
 cd ../..                   # back to the site you were in
-git commit -am "Bump arcade-kit" src/arcade-kit && git push
+git commit -am "Bump theme-kit" src/theme-kit && git push
 
 cd ../desaimakes           # and the other one
 npm run kit:bump           # git submodule update --remote --merge
-git commit -am "Bump arcade-kit" src/arcade-kit && git push
+git commit -am "Bump theme-kit" src/theme-kit && git push
 ```
 
 `.gitmodules` sets `branch = main`, and `kit:bump` passes `--merge`, so the submodule stays on
 `main` and stays editable. A plain `git submodule update` leaves it on a detached HEAD; if that
-happens, `git -C src/arcade-kit checkout main` puts it back.
+happens, `git -C src/theme-kit checkout main` puts it back.
 
 The pointer bump is what makes the change real for a site — a commit in the kit alone changes
 nothing until each parent repo records the new SHA. Both sites deploy on Vercel, which checks out
@@ -96,37 +96,21 @@ module in that repo (e.g. `desaimakes/src/app/site.module.css`), which can freel
 If a block of CSS would only ever be used by one site, keep it in that site. Two consumers is
 what earns a place in here.
 
-## One-time setup: putting this repo on GitHub
+## Deploying sites that use this
 
-Until this repo is on GitHub, both sites point at it by local path
-(`url = /Users/desaiwang/Documents/GitHub/arcade-kit` in their `.gitmodules`), which works
-locally but **cannot be cloned by Vercel**. To finish the setup:
+This repo is **private**, which Vercel does not clone by default. For a site that uses it to
+build, the Vercel GitHub App must be granted access to **this repo as well as the site's** —
+GitHub → Settings → Applications → Vercel → Repository access. Without it the build fails with
+`Cannot find module '@kit/...'`, which looks like a path problem but is a permissions one.
 
-```bash
-cd ~/Documents/GitHub/arcade-kit
-gh repo create desaiwang/arcade-kit --public --source=. --remote=origin --push
+`.gitmodules` in each site must use the `https://` URL, not `git@github.com:…` — Vercel clones
+submodules over HTTPS:
 
-# then in each site, point the submodule at GitHub and commit the change
-cd ~/Documents/GitHub/portfolio-nextjs
-git submodule set-url src/arcade-kit https://github.com/desaiwang/arcade-kit.git
-git submodule sync src/arcade-kit
-git commit -am "Point arcade-kit at GitHub" .gitmodules
-
-cd ~/Documents/GitHub/desaimakes
-git submodule set-url src/arcade-kit https://github.com/desaiwang/arcade-kit.git
-git submodule sync src/arcade-kit
-git commit -am "Point arcade-kit at GitHub" .gitmodules
+```
+url = https://github.com/desaiwang/theme-kit.git
 ```
 
-Use the `https://` URL, not `git@github.com:…` — Vercel clones submodules over HTTPS.
+Making this repo public would remove the access step entirely; it holds no personal content.
 
-Two notes about the local-path setup, both of which go away after the flip:
-
-- Git refuses `file://` submodule fetches by default, so `git submodule update --remote` needs
-  `-c protocol.file.allow=always`. Each site's `npm run kit:bump` already passes it; the flag is
-  harmless over HTTPS, so the script keeps working afterwards.
-- This checkout has `receive.denyCurrentBranch=updateInstead` set so the sites can push into it
-  while it is the origin.
-
-After the flip, `~/Documents/GitHub/arcade-kit` is just a spare clone — the copies that matter are
-the ones inside each site.
+`~/Documents/GitHub/theme-kit` is a spare clone kept for convenience — the checkouts that matter
+are the ones inside each site.
