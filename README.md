@@ -18,7 +18,7 @@ components. A style change made from inside either checkout is the same change f
 | `grid.ts` | `fitGrid()` sizes `--ch` so the page fits a whole number of monospace columns, plus `GRID_SCRIPT` for the inline first-paint call. |
 | `GridSizer.tsx` | Keeps the grid in sync on resize and after client navigation. |
 | `ArcadeShell.tsx` | The themed wrapper: `[data-arcade]` root, grid script, optional extra CSS. Each site composes its own header/main/footer inside it. |
-| `ArcadeHeader.tsx` | Name, nav links, theme toggle. Links are passed in, so the nav can differ per site. |
+| `ArcadeHeader.tsx` | Name, nav links, theme toggle. Links are passed in, so the nav can differ per site — or be left out. |
 | `WordmarkFooter.tsx` | The oversized wordmark with place, clock, email and links. |
 | `Index.tsx` | The numbered index with the hover image / abstract column. The main content component. |
 | `ThemeToggle.tsx` | Light/dark, written to the `color-theme` cookie. |
@@ -31,6 +31,25 @@ mounted. Consuming repos alias it as `@kit/*`.
 **Requires:** Next.js 15+ (App Router), React 19, and CSS Modules — no other dependencies, no
 Tailwind. There is deliberately no `package.json`: a nested one would make Next treat this folder
 as a package boundary.
+
+## Per-site options
+
+Where the two sites need to differ, the kit takes a prop rather than forking. **Every one of these
+is off by default**, so adding one can never change the site that doesn't pass it.
+
+| Component | Prop | Does |
+| --- | --- | --- |
+| `ArcadeHeader` | `links` | Nav items. Omit it and the `<nav>` is left out entirely, rather than rendering an empty landmark. |
+| `Index` | `showKind` | Bring back the type column (Product, Data, a note's first tag…). Rows otherwise read number, title, date. |
+| `Index` | `bleed` | Let the hover image run past the bottom of the index. For a short index the image is taller than the rows, so clamping pins every row to the same spot; bleeding lets it spill into whatever is below. A long index would spill into the footer, hence off by default. |
+| `WordmarkFooter` | `linksLabel` | A label line above the links column, the way `place` labels the clock. |
+| `WordmarkFooter` | `yearLabel` | A label line above the year. With one, the year drops its `©`, since it is no longer a copyright line. |
+| `WordmarkFooter` | `updated` | An ISO date rendered as "Sep 2026" in the year column, so a site can show when its content changed rather than today's date. |
+| `WordmarkFooter` | `mutedLabels` | Grey every column's label line, leaving the values in ink — the treatment `.postMeta` already uses. |
+| `ArcadeShell` | `tokenCss` | Extra CSS injected inside the wrapper, e.g. desaiwang.com's bridge mapping the old site's tokens onto Arcade's. |
+
+As of now desaimakes.com passes `bleed`, `linksLabel`, `yearLabel`, `updated` and `mutedLabels`
+and no `links`; desaiwang.com passes `links` and `tokenCss`.
 
 ## Working on it
 
