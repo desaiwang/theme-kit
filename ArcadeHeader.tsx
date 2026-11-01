@@ -13,27 +13,30 @@ export type NavLink = {
 };
 
 // Name far left; nav from the col-3 line (centred on phones); theme toggle far right.
+// With no links the nav is left out entirely, rather than rendering an empty landmark.
 export default function ArcadeHeader({
   name,
   homeHref = "/",
-  links,
+  links = [],
 }: {
   name: string;
   homeHref?: string;
-  links: NavLink[];
+  links?: NavLink[];
 }) {
   return (
     <header className={`${styles.top} ${styles.g4}`}>
       <Link href={homeHref} className={styles.name}>{name}</Link>
-      <nav aria-label="Main">
-        {links.map((l) =>
-          (l.external ?? l.href.startsWith("http")) ? (
-            <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>
-          ) : (
-            <Link key={l.href} href={l.href} aria-current={l.current ? "page" : undefined}>{l.label}</Link>
-          ),
-        )}
-      </nav>
+      {links.length > 0 && (
+        <nav aria-label="Main">
+          {links.map((l) =>
+            (l.external ?? l.href.startsWith("http")) ? (
+              <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>
+            ) : (
+              <Link key={l.href} href={l.href} aria-current={l.current ? "page" : undefined}>{l.label}</Link>
+            ),
+          )}
+        </nav>
+      )}
       <ThemeToggle />
     </header>
   );
