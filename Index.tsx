@@ -28,10 +28,18 @@ export default function Index({
   className = "",
   /** Show the type column (Product, Data, a note's first tag…). Off by default: rows read number, title, date. */
   showKind = false,
+  /**
+   * Let the hover image run past the bottom of the index instead of being held inside it.
+   * For a short index the image is taller than the rows, so clamping it pins every row's
+   * image to the same place; bleeding lets it centre properly and spill into whatever sits
+   * below. Off by default — a long index would spill into the footer.
+   */
+  bleed = false,
 }: {
   groups: IndexGroup[];
   className?: string;
   showKind?: boolean;
+  bleed?: boolean;
 }) {
   const colRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLDivElement>(null);
@@ -51,8 +59,9 @@ export default function Index({
     const col = colRef.current.getBoundingClientRect();
     const r = active.el.getBoundingClientRect();
     const t = r.top - col.top + r.height / 2 - box.offsetHeight / 2;
-    setTop(Math.max(0, Math.min(t, colRef.current.offsetHeight - box.offsetHeight)));
-  }, [active, showImage, showText]);
+    const lowest = bleed ? Infinity : colRef.current.offsetHeight - box.offsetHeight;
+    setTop(Math.max(0, Math.min(t, lowest)));
+  }, [active, showImage, showText, bleed]);
 
   // the hover column starts just past the longest section label
   const labelChars = Math.max(...groups.map((g) => g.label.length));
@@ -60,7 +69,12 @@ export default function Index({
   const show = (r: IndexRow, el: HTMLElement) => setActive(r.image || r.preview ? { row: r, el } : null);
   return (
     <section className={`${styles.index} ${styles.g4} ${className}`}>
-      <div className={styles.imageCol} ref={colRef} aria-hidden="true" style={{ "--label-chars": labelChars } as React.CSSProperties}>
+      <div
+        className={`${styles.imageCol} ${bleed ? styles.imageColBleed : ""}`}
+        ref={colRef}
+        aria-hidden="true"
+        style={{ "--label-chars": labelChars } as React.CSSProperties}
+      >
         <div ref={imgRef} className={styles.hov} data-on={showImage} style={{ top: showImage ? top : 0, background: row?.tone }}>
           {row?.image && !broken[row.image] ? (
             // eslint-disable-next-line @next/next/no-img-element
