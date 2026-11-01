@@ -28,6 +28,8 @@ export default function WordmarkFooter({
   links = [],
   linksLabel,
   yearLabel,
+  updated,
+  mutedLabels = false,
 }: {
   wordmark: string;
   place?: string;
@@ -38,6 +40,10 @@ export default function WordmarkFooter({
   linksLabel?: string;
   /** optional label above the year, e.g. "Updated". With one, the year drops its © */
   yearLabel?: string;
+  /** ISO date behind the year column, shown as "Sep 2026". Without it, the current year. */
+  updated?: string;
+  /** grey the label line of every column, leaving the values in full contrast */
+  mutedLabels?: boolean;
 }) {
   const [time, setTime] = useState("");
 
@@ -47,14 +53,38 @@ export default function WordmarkFooter({
     return () => clearInterval(id);
   }, [timeZone]);
 
+  // the label line of each column; muted when the site asks for it
+  const label = mutedLabels ? styles.footLabel : undefined;
+  // "Sep 2026" when the site passes a date, otherwise just this year
+  const stamp = updated
+    ? new Date(updated).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
+    : String(new Date().getFullYear());
+
   return (
     <footer className={styles.foot}>
       <p className={styles.wordmark} aria-label={wordmark}>{wordmark}</p>
       <div className={`${styles.meta} ${styles.g4}`}>
-        <span>{place}<br /><span suppressHydrationWarning>{time}</span></span>
-        <span>{email ? <>Say hi<br /><a href={`mailto:${email}`}>{email}</a></> : null}</span>
         <span>
-          {linksLabel && <>{linksLabel}<br /></>}
+          <span className={label}>{place}</span>
+          <br />
+          <span suppressHydrationWarning>{time}</span>
+        </span>
+        <span>
+          {email ? (
+            <>
+              <span className={label}>Say hi</span>
+              <br />
+              <a href={`mailto:${email}`}>{email}</a>
+            </>
+          ) : null}
+        </span>
+        <span>
+          {linksLabel && (
+            <>
+              <span className={label}>{linksLabel}</span>
+              <br />
+            </>
+          )}
           {links.map((l, i) => (
             <span key={l.href}>
               <a href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>
@@ -63,7 +93,15 @@ export default function WordmarkFooter({
           ))}
         </span>
         <span>
-          {yearLabel ? <>{yearLabel}<br />{new Date().getFullYear()}</> : <>©{new Date().getFullYear()}</>}
+          {yearLabel ? (
+            <>
+              <span className={label}>{yearLabel}</span>
+              <br />
+              {stamp}
+            </>
+          ) : (
+            <>©{new Date().getFullYear()}</>
+          )}
         </span>
       </div>
     </footer>

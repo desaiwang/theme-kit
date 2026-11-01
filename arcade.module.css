@@ -245,6 +245,8 @@
   overflow: hidden;
 }
 .meta { padding-top: calc(var(--unit) * 2.25); padding-bottom: calc(var(--unit) * 5); text-transform: uppercase; }
+/* opt-in via WordmarkFooter's mutedLabels: the label line greys back, the values stay in ink */
+.footLabel { color: var(--mute); }
 .meta > :last-child { text-align: right; }
 .meta a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
 
