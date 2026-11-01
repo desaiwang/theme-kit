@@ -201,6 +201,9 @@
 .prose ul, .prose ol { padding-left: 1.4em; margin: 0 0 1.25em; }
 .prose ul { list-style: disc; } .prose ol { list-style: decimal; }
 .prose li { margin-bottom: .4em; }
+/* a list nested in a list item sits tight under it, instead of carrying the 1.25em block gap
+   that would make an item with sub-points taller than its neighbours */
+.prose li > ul, .prose li > ol { margin: .4em 0 0; }
 .prose li::marker { color: var(--mute); }
 .prose img, .prose video { max-width: 100%; height: auto; border-radius: 4px; }
 .prose figure { margin: 2em 0; }
