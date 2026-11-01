@@ -274,7 +274,9 @@
   .group h2 { grid-row: auto; margin-bottom: 6px; }
   .group { margin-bottom: calc(var(--unit) * 7); }
   .row { grid-template-columns: 4ch minmax(0, 1fr) auto; column-gap: 1ch; }
-  .row .title { grid-column: 2; }
+  /* [data-wide] is the no-type-column case; it spans 2/5 on the 4-column row grid, which
+     would collide with the year here, so both forms are pinned to column 2 */
+  .row .title, .row .title[data-wide] { grid-column: 2; }
   .row .year { grid-column: 3; }
   .meta { grid-template-columns: 1fr 1fr; row-gap: 12px; }
   .meta > :last-child { text-align: left; }
